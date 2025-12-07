@@ -28,16 +28,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // Theme toggle elements
   const themeToggle = document.getElementById("theme-toggle");
   const themeIcon = themeToggle.querySelector(".theme-icon");
-  const themeText = themeToggle.querySelector("span:last-child");
+  const themeText = document.getElementById("theme-text");
 
   // Initialize theme from localStorage
   function initializeTheme() {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      document.body.classList.add("dark-mode");
-      updateThemeButton(true);
-    } else {
-      document.body.classList.remove("dark-mode");
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      // Default to light mode if no preference is saved
+      const isDarkMode = savedTheme === "dark";
+      
+      if (isDarkMode) {
+        document.body.classList.add("dark-mode");
+      } else {
+        document.body.classList.remove("dark-mode");
+      }
+      updateThemeButton(isDarkMode);
+    } catch (error) {
+      // If localStorage is not available (e.g., private browsing), default to light mode
+      console.warn("Could not access localStorage for theme preference:", error);
       updateThemeButton(false);
     }
   }
@@ -56,7 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Toggle theme
   function toggleTheme() {
     const isDarkMode = document.body.classList.toggle("dark-mode");
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    try {
+      localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    } catch (error) {
+      // If localStorage is not available, continue without saving preference
+      console.warn("Could not save theme preference to localStorage:", error);
+    }
     updateThemeButton(isDarkMode);
   }
 
