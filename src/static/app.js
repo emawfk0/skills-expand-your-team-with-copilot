@@ -539,13 +539,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="share-icon">f</span>
             <span class="tooltip-text">Share on Facebook</span>
           </button>
-          <button class="social-share-btn twitter" data-platform="twitter" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on Twitter">
+          <button class="social-share-btn twitter" data-platform="twitter" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on X (Twitter)">
             <span class="share-icon">𝕏</span>
-            <span class="tooltip-text">Share on Twitter</span>
+            <span class="tooltip-text">Share on X (Twitter)</span>
           </button>
-          <button class="social-share-btn whatsapp" data-platform="whatsapp" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on WhatsApp">
+          <button class="social-share-btn whatsapp" data-platform="whatsapp" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} via WhatsApp">
             <span class="share-icon">📱</span>
-            <span class="tooltip-text">Share on WhatsApp</span>
+            <span class="tooltip-text">Share via WhatsApp</span>
           </button>
           <button class="social-share-btn email" data-platform="email" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} via Email">
             <span class="share-icon">✉</span>
@@ -806,7 +806,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const activityName = button.dataset.activity;
     const activityDetails = allActivities[activityName];
 
+    // Check if activity details exist
     if (!activityDetails) {
+      console.error(`Activity "${activityName}" not found for sharing`);
+      showMessage("Unable to share activity. Please try again.", "error");
       return;
     }
 
@@ -883,6 +886,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         } else {
           // Fallback for older browsers or non-HTTPS environments
+          // Note: document.execCommand('copy') is deprecated but maintained for legacy browser support
           try {
             // Create a temporary textarea element
             const textArea = document.createElement("textarea");
@@ -894,7 +898,7 @@ document.addEventListener("DOMContentLoaded", () => {
             textArea.focus();
             textArea.select();
             
-            // Try to copy using execCommand
+            // Try to copy using execCommand (deprecated but supported in older browsers)
             const successful = document.execCommand('copy');
             document.body.removeChild(textArea);
             
