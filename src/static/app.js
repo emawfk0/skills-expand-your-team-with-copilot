@@ -25,6 +25,60 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
 
+  // Theme toggle elements
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeIcon = themeToggle.querySelector(".theme-icon");
+  const themeText = document.getElementById("theme-text");
+
+  // Initialize theme from localStorage
+  function initializeTheme() {
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      // Default to light mode if no preference is saved
+      const isDarkMode = savedTheme === "dark";
+      
+      if (isDarkMode) {
+        document.body.classList.add("dark-mode");
+      } else {
+        document.body.classList.remove("dark-mode");
+      }
+      updateThemeButton(isDarkMode);
+    } catch (error) {
+      // If localStorage is not available (e.g., private browsing), default to light mode
+      console.warn("Could not access localStorage for theme preference:", error);
+      updateThemeButton(false);
+    }
+  }
+
+  // Update theme button appearance
+  function updateThemeButton(isDark) {
+    if (isDark) {
+      themeIcon.textContent = "☀️";
+      themeText.textContent = "Light";
+    } else {
+      themeIcon.textContent = "🌙";
+      themeText.textContent = "Dark";
+    }
+  }
+
+  // Toggle theme
+  function toggleTheme() {
+    const isDarkMode = document.body.classList.toggle("dark-mode");
+    try {
+      localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    } catch (error) {
+      // If localStorage is not available, continue without saving preference
+      console.warn("Could not save theme preference to localStorage:", error);
+    }
+    updateThemeButton(isDarkMode);
+  }
+
+  // Add event listener for theme toggle
+  themeToggle.addEventListener("click", toggleTheme);
+
+  // Initialize theme on load
+  initializeTheme();
+
   // Activity categories with corresponding colors
   const activityTypes = {
     sports: { label: "Sports", color: "#e8f5e9", textColor: "#2e7d32" },
