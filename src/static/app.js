@@ -519,6 +519,46 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    // Create social sharing buttons with proper accessibility
+    const escapedActivityName = name.replace(/[&<>"']/g, (char) => {
+      const escapeMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return escapeMap[char];
+    });
+
+    const socialSharingButtons = `
+      <div class="social-sharing-container">
+        <div class="social-sharing-title">Share this activity</div>
+        <div class="social-sharing-buttons">
+          <button class="social-share-btn facebook" data-platform="facebook" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on Facebook">
+            <span class="share-icon">f</span>
+            <span class="tooltip-text">Share on Facebook</span>
+          </button>
+          <button class="social-share-btn twitter" data-platform="twitter" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on X (Twitter)">
+            <span class="share-icon">𝕏</span>
+            <span class="tooltip-text">Share on X (Twitter)</span>
+          </button>
+          <button class="social-share-btn whatsapp" data-platform="whatsapp" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} via WhatsApp">
+            <span class="share-icon">📱</span>
+            <span class="tooltip-text">Share via WhatsApp</span>
+          </button>
+          <button class="social-share-btn email" data-platform="email" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} via Email">
+            <span class="share-icon">✉</span>
+            <span class="tooltip-text">Share via Email</span>
+          </button>
+          <button class="social-share-btn copy-link" data-platform="copy" data-activity="${escapedActivityName}" aria-label="Copy ${escapedActivityName} link and details">
+            <span class="share-icon">🔗</span>
+            <span class="tooltip-text">Copy Link</span>
+          </button>
+        </div>
+      </div>
+    `;
+
     activityCard.innerHTML = `
       ${tagHtml}
       <h4>${name}</h4>
@@ -528,6 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="tooltip-text">Regular meetings at this time throughout the semester</span>
       </p>
       ${capacityIndicator}
+      ${socialSharingButtons}
       <div class="participants-list">
         <h5>Current Participants:</h5>
         <ul>
@@ -575,6 +616,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
     deleteButtons.forEach((button) => {
       button.addEventListener("click", handleUnregister);
+    });
+
+    // Add click handlers for social sharing buttons
+    const shareButtons = activityCard.querySelectorAll(".social-share-btn");
+    shareButtons.forEach((button) => {
+      button.addEventListener("click", handleSocialShare);
     });
 
     // Add click handler for register button (only when authenticated)
@@ -750,6 +797,134 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 300);
       }
     });
+  }
+
+  // Handle social sharing
+  function handleSocialShare(event) {
+    const button = event.currentTarget;
+    const platform = button.dataset.platform;
+    const activityName = button.dataset.activity;
+    const activityDetails = allActivities[activityName];
+
+    // Check if activity details exist
+    if (!activityDetails) {
+      console.error(`Activity "${activityName}" not found for sharing`);
+      showMessage("Unable to share activity. Please try again.", "error");
+      return;
+    }
+
+    // Build the share content
+    const activityType = getActivityType(activityName, activityDetails.description);
+    const schedule = formatSchedule(activityDetails);
+    const shareTitle = `Join ${activityName} at Mergington High School!`;
+    const shareText = `Check out this activity: ${activityName}\n\n${activityDetails.description}\n\nSchedule: ${schedule}\n\nCategory: ${activityTypes[activityType].label}`;
+    const shareUrl = window.location.href;
+
+    switch (platform) {
+      case "facebook":
+        // Facebook share URL
+        const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          shareUrl
+        )}&quote=${encodeURIComponent(shareText)}`;
+        window.open(fbUrl, "_blank", "width=600,height=400");
+        break;
+
+      case "twitter":
+        // Twitter share URL
+        const twitterText = `${shareTitle}\n\n${activityDetails.description}\n\nSchedule: ${schedule}`;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+          twitterText
+        )}&url=${encodeURIComponent(shareUrl)}`;
+        window.open(twitterUrl, "_blank", "width=600,height=400");
+        break;
+
+      case "whatsapp":
+        // WhatsApp share URL
+        const whatsappText = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+          whatsappText
+        )}`;
+        window.open(whatsappUrl, "_blank");
+        break;
+
+      case "email":
+        // Email share
+        const emailSubject = shareTitle;
+        const emailBody = `${shareText}\n\nVisit: ${shareUrl}`;
+        const mailtoUrl = `mailto:?subject=${encodeURIComponent(
+          emailSubject
+        )}&body=${encodeURIComponent(emailBody)}`;
+        window.location.href = mailtoUrl;
+        break;
+
+      case "copy":
+        // Copy link to clipboard with fallback for older browsers
+        const textToCopy = `${shareTitle}\n\n${shareText}\n\nVisit: ${shareUrl}`;
+        
+        // Check if clipboard API is available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard
+            .writeText(textToCopy)
+            .then(() => {
+              // Visual feedback - change button appearance
+              button.classList.add("copied");
+              const icon = button.querySelector(".share-icon");
+              const originalIcon = icon.textContent;
+              icon.textContent = "✓";
+
+              // Reset after 2 seconds
+              setTimeout(() => {
+                button.classList.remove("copied");
+                icon.textContent = originalIcon;
+              }, 2000);
+
+              showMessage("Link and details copied to clipboard!", "success");
+            })
+            .catch((err) => {
+              console.error("Failed to copy:", err);
+              showMessage("Failed to copy link. Please try again.", "error");
+            });
+        } else {
+          // Fallback for older browsers or non-HTTPS environments
+          // Note: document.execCommand('copy') is deprecated but maintained for legacy browser support
+          try {
+            // Create a temporary textarea element
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            // Try to copy using execCommand (deprecated but supported in older browsers)
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (successful) {
+              // Visual feedback
+              button.classList.add("copied");
+              const icon = button.querySelector(".share-icon");
+              const originalIcon = icon.textContent;
+              icon.textContent = "✓";
+
+              setTimeout(() => {
+                button.classList.remove("copied");
+                icon.textContent = originalIcon;
+              }, 2000);
+
+              showMessage("Link and details copied to clipboard!", "success");
+            } else {
+              showMessage("Copy to clipboard is not supported in this browser. Please copy the URL manually.", "error");
+            }
+          } catch (err) {
+            console.error("Fallback copy failed:", err);
+            showMessage("Copy to clipboard is not supported in this browser. Please copy the URL manually.", "error");
+          }
+        }
+        break;
+    }
   }
 
   // Handle unregistration with confirmation
