@@ -25,6 +25,47 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
 
+  // Theme toggle elements
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeIcon = themeToggle.querySelector(".theme-icon");
+  const themeText = themeToggle.querySelector("span:last-child");
+
+  // Initialize theme from localStorage
+  function initializeTheme() {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark-mode");
+      updateThemeButton(true);
+    } else {
+      document.body.classList.remove("dark-mode");
+      updateThemeButton(false);
+    }
+  }
+
+  // Update theme button appearance
+  function updateThemeButton(isDark) {
+    if (isDark) {
+      themeIcon.textContent = "☀️";
+      themeText.textContent = "Light";
+    } else {
+      themeIcon.textContent = "🌙";
+      themeText.textContent = "Dark";
+    }
+  }
+
+  // Toggle theme
+  function toggleTheme() {
+    const isDarkMode = document.body.classList.toggle("dark-mode");
+    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    updateThemeButton(isDarkMode);
+  }
+
+  // Add event listener for theme toggle
+  themeToggle.addEventListener("click", toggleTheme);
+
+  // Initialize theme on load
+  initializeTheme();
+
   // Activity categories with corresponding colors
   const activityTypes = {
     sports: { label: "Sports", color: "#e8f5e9", textColor: "#2e7d32" },
