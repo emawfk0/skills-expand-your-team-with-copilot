@@ -519,28 +519,39 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // Create social sharing buttons
+    // Create social sharing buttons with proper accessibility
+    const escapedActivityName = name.replace(/[&<>"']/g, (char) => {
+      const escapeMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return escapeMap[char];
+    });
+
     const socialSharingButtons = `
       <div class="social-sharing-container">
         <div class="social-sharing-title">Share this activity</div>
         <div class="social-sharing-buttons">
-          <button class="social-share-btn facebook" data-platform="facebook" data-activity="${name}">
+          <button class="social-share-btn facebook" data-platform="facebook" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on Facebook">
             <span class="share-icon">f</span>
             <span class="tooltip-text">Share on Facebook</span>
           </button>
-          <button class="social-share-btn twitter" data-platform="twitter" data-activity="${name}">
+          <button class="social-share-btn twitter" data-platform="twitter" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on Twitter">
             <span class="share-icon">𝕏</span>
             <span class="tooltip-text">Share on Twitter</span>
           </button>
-          <button class="social-share-btn whatsapp" data-platform="whatsapp" data-activity="${name}">
+          <button class="social-share-btn whatsapp" data-platform="whatsapp" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} on WhatsApp">
             <span class="share-icon">📱</span>
             <span class="tooltip-text">Share on WhatsApp</span>
           </button>
-          <button class="social-share-btn email" data-platform="email" data-activity="${name}">
+          <button class="social-share-btn email" data-platform="email" data-activity="${escapedActivityName}" aria-label="Share ${escapedActivityName} via Email">
             <span class="share-icon">✉</span>
             <span class="tooltip-text">Share via Email</span>
           </button>
-          <button class="social-share-btn copy-link" data-platform="copy" data-activity="${name}">
+          <button class="social-share-btn copy-link" data-platform="copy" data-activity="${escapedActivityName}" aria-label="Copy ${escapedActivityName} link and details">
             <span class="share-icon">🔗</span>
             <span class="tooltip-text">Copy Link</span>
           </button>
@@ -844,29 +855,70 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
 
       case "copy":
-        // Copy link to clipboard
+        // Copy link to clipboard with fallback for older browsers
         const textToCopy = `${shareTitle}\n\n${shareText}\n\nVisit: ${shareUrl}`;
-        navigator.clipboard
-          .writeText(textToCopy)
-          .then(() => {
-            // Visual feedback - change button appearance
-            button.classList.add("copied");
-            const icon = button.querySelector(".share-icon");
-            const originalIcon = icon.textContent;
-            icon.textContent = "✓";
+        
+        // Check if clipboard API is available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard
+            .writeText(textToCopy)
+            .then(() => {
+              // Visual feedback - change button appearance
+              button.classList.add("copied");
+              const icon = button.querySelector(".share-icon");
+              const originalIcon = icon.textContent;
+              icon.textContent = "✓";
 
-            // Reset after 2 seconds
-            setTimeout(() => {
-              button.classList.remove("copied");
-              icon.textContent = originalIcon;
-            }, 2000);
+              // Reset after 2 seconds
+              setTimeout(() => {
+                button.classList.remove("copied");
+                icon.textContent = originalIcon;
+              }, 2000);
 
-            showMessage("Link and details copied to clipboard!", "success");
-          })
-          .catch((err) => {
-            console.error("Failed to copy:", err);
-            showMessage("Failed to copy link. Please try again.", "error");
-          });
+              showMessage("Link and details copied to clipboard!", "success");
+            })
+            .catch((err) => {
+              console.error("Failed to copy:", err);
+              showMessage("Failed to copy link. Please try again.", "error");
+            });
+        } else {
+          // Fallback for older browsers or non-HTTPS environments
+          try {
+            // Create a temporary textarea element
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            // Try to copy using execCommand
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (successful) {
+              // Visual feedback
+              button.classList.add("copied");
+              const icon = button.querySelector(".share-icon");
+              const originalIcon = icon.textContent;
+              icon.textContent = "✓";
+
+              setTimeout(() => {
+                button.classList.remove("copied");
+                icon.textContent = originalIcon;
+              }, 2000);
+
+              showMessage("Link and details copied to clipboard!", "success");
+            } else {
+              showMessage("Copy to clipboard is not supported in this browser. Please copy the URL manually.", "error");
+            }
+          } catch (err) {
+            console.error("Fallback copy failed:", err);
+            showMessage("Copy to clipboard is not supported in this browser. Please copy the URL manually.", "error");
+          }
+        }
         break;
     }
   }
